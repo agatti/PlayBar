@@ -266,7 +266,7 @@
     
     if(!array || array.count == 0)
     {
-        NSDictionary *episodeDictionary = @{ @"title" : url.lastPathComponent, @"album" : url.host, @"url" : url };
+        NSDictionary *episodeDictionary = @{ @"title" : url.lastPathComponent, @"album" : url.host ? url.host : @"", @"url" : url };
         [self.episodes addObject:episodeDictionary];
         [self.episodeList reloadData];
     }
