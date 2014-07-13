@@ -29,6 +29,7 @@
 		17AC521B15D5D2A4003956D0 /* QTKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17AC521A15D5D2A4003956D0 /* QTKit.framework */; };
 		17C553B315DC131200753DFF /* statusBarIcon-click.png in Resources */ = {isa = PBXBuildFile; fileRef = 17C553B115DC131200753DFF /* statusBarIcon-click.png */; };
 		17C553B415DC131200753DFF /* statusBarIcon-click@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 17C553B215DC131200753DFF /* statusBarIcon-click@2x.png */; };
+		685DD0CC197330540083B6FC /* UserDefaults.plist in Resources */ = {isa = PBXBuildFile; fileRef = 685DD0CB197330540083B6FC /* UserDefaults.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 		17C553B115DC131200753DFF /* statusBarIcon-click.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "statusBarIcon-click.png"; path = "Resources/statusBarIcon-click.png"; sourceTree = SOURCE_ROOT; };
 		17C553B215DC131200753DFF /* statusBarIcon-click@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "statusBarIcon-click@2x.png"; path = "Resources/statusBarIcon-click@2x.png"; sourceTree = SOURCE_ROOT; };
 		17D76C9515DF8870009933A5 /* PlayBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PlayBar.entitlements; sourceTree = "<group>"; };
+		685DD0CB197330540083B6FC /* UserDefaults.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = UserDefaults.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +140,7 @@
 				1724F7DD15D5BBFB00EFE31B /* main.m */,
 				1724F7DF15D5BBFB00EFE31B /* PlayBar-Prefix.pch */,
 				1724F7E015D5BBFB00EFE31B /* Credits.rtf */,
+				685DD0CB197330540083B6FC /* UserDefaults.plist */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -220,6 +223,7 @@
 				173095E015D8245F00DD7E78 /* statusBarIcon@2x.png in Resources */,
 				17C553B315DC131200753DFF /* statusBarIcon-click.png in Resources */,
 				17C553B415DC131200753DFF /* statusBarIcon-click@2x.png in Resources */,
+				685DD0CC197330540083B6FC /* UserDefaults.plist in Resources */,
 				171906CF15E390780008E531 /* button-list.png in Resources */,
 				171906D015E390780008E531 /* button-pause.png in Resources */,
 				171906D115E390780008E531 /* button-skip.png in Resources */,

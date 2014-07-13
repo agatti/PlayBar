@@ -3,7 +3,9 @@
 //  PlayBar
 //
 //  Created by Stuart Moore on 8/10/12.
-//  Copyright (c) 2012-2013 Stuart Moore. This file is part of PlayBar.
+//  Copyright (c) 2012-2013 Stuart Moore.
+//  Copyright (c) 2014 Alessandro Gatti.
+//  This file is part of PlayBar.
 
 //  PlayBar is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -21,7 +23,16 @@
 
 #import "SMAppDelegate.h"
 
+static NSString * const kFirstRunDonePreferenceKey = @"FirstRunDone";
+static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
+
 @implementation SMAppDelegate
+
++ (void)initialize {
+    [super initialize];
+
+    [SMAppDelegate setupDefaults];
+}
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification
 {
@@ -79,6 +90,17 @@
                                              selector:@selector(movieEnded:)
                                                  name:QTMovieDidEndNotification
                                                object:self.player];
+
+    NSUserDefaultsController *defaultsController = [NSUserDefaultsController sharedUserDefaultsController];
+    defaultsController.appliesImmediately = YES;
+
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    BOOL isFirstRun = [defaults boolForKey:kFirstRunDonePreferenceKey];
+    if (!isFirstRun) {
+        [defaults setBool:YES forKey:kFirstRunDonePreferenceKey];
+        [defaults synchronize];
+        [self.preferencesWindow makeKeyAndOrderFront:self];
+    }
 }
 
 #pragma mark - QTNotifications
@@ -234,6 +256,7 @@
        didEndSelector:@selector(didEndSheet:returnCode:contextInfo:)
           contextInfo:nil];
 }
+
 - (IBAction)closeURLDialog:(NSButton*)sender
 {
     if([sender.title isEqualToString:@"Cancel"])
@@ -241,12 +264,25 @@
     else if([sender.title isEqualToString:@"Open"])
         [NSApp endSheet:self.openURLWindow returnCode:1];
 }
+
 - (void)didEndSheet:(NSWindow*)sheet returnCode:(NSInteger)returnCode contextInfo:(void*)contextInfo
 {
     [sheet orderOut:self];
 
     if(returnCode == 1)
         [self addURL:[NSURL URLWithString:self.URLField.stringValue]];
+}
+
+#pragma mark - Menu callbacks
+
+- (IBAction)showAboutWindow:(id)sender
+{
+
+}
+
+- (IBAction)showPreferenceWindow:(id)sender
+{
+    [self.preferencesWindow makeKeyAndOrderFront:self];
 }
 
 #pragma mark - Add and Play
@@ -343,7 +379,12 @@
     }
     
     if(!sender && rowIndex >= self.episodes.count)
-        [self quit:nil];
+    {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        BOOL shouldExit = [defaults boolForKey:kExitWhenDonePreferenceKey];
+        if (shouldExit)
+            [self quit:nil];
+    }
     
     if(rowIndex >= self.episodes.count)
         rowIndex = 0;
@@ -479,6 +520,18 @@
 - (void)applicationWillTerminate:(NSNotification*)notification
 {
     [self saveState];
+}
+
+#pragma mark - Preferences
+
++ (void)setupDefaults
+{
+    NSString *userDefaultsValuesPath = [[NSBundle mainBundle] pathForResource:@"UserDefaults" ofType:@"plist"];
+    NSDictionary *userDefaultsValuesDict = [NSDictionary dictionaryWithContentsOfFile:userDefaultsValuesPath];
+    [[NSUserDefaults standardUserDefaults] registerDefaults:userDefaultsValuesDict];
+    NSArray *resettableUserDefaultsKeys = @[ kExitWhenDonePreferenceKey ];
+    NSDictionary *initialValuesDict = [userDefaultsValuesDict dictionaryWithValuesForKeys:resettableUserDefaultsKeys];
+    [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:initialValuesDict];
 }
 
 @end
