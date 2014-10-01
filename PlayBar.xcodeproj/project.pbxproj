@@ -60,13 +60,11 @@
 		178C270216BEF47C0013B8E4 /* statusBarIcon-playing@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "statusBarIcon-playing@2x.png"; path = "Resources/statusBarIcon-playing@2x.png"; sourceTree = SOURCE_ROOT; };
 		178C270516BEF53C0013B8E4 /* button-play.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "button-play.png"; path = "Resources/button-play.png"; sourceTree = SOURCE_ROOT; };
 		178C270616BEF53C0013B8E4 /* button-play@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "button-play@2x.png"; path = "Resources/button-play@2x.png"; sourceTree = SOURCE_ROOT; };
-		17AC521A15D5D2A4003956D0 /* QTKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QTKit.framework; path = System/Library/Frameworks/QTKit.framework; sourceTree = SDKROOT; };
 		17C553B115DC131200753DFF /* statusBarIcon-click.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "statusBarIcon-click.png"; path = "Resources/statusBarIcon-click.png"; sourceTree = SOURCE_ROOT; };
 		17C553B215DC131200753DFF /* statusBarIcon-click@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "statusBarIcon-click@2x.png"; path = "Resources/statusBarIcon-click@2x.png"; sourceTree = SOURCE_ROOT; };
 		17D76C9515DF8870009933A5 /* PlayBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PlayBar.entitlements; sourceTree = "<group>"; };
 		685DD0CB197330540083B6FC /* UserDefaults.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = UserDefaults.plist; sourceTree = "<group>"; };
 		687F1A2E19DC9E5D0086386E /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		687F1A2F19DC9E5D0086386E /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,8 +101,6 @@
 			isa = PBXGroup;
 			children = (
 				687F1A2E19DC9E5D0086386E /* AVFoundation.framework */,
-				687F1A2F19DC9E5D0086386E /* AVKit.framework */,
-				17AC521A15D5D2A4003956D0 /* QTKit.framework */,
 				1724F7D115D5BBFB00EFE31B /* Cocoa.framework */,
 				1724F7D315D5BBFB00EFE31B /* Other Frameworks */,
 			);
