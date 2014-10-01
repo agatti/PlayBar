@@ -22,13 +22,13 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <QTKit/QTKit.h>
+#import <AVFoundation/AVFoundation.h>
 #import "SMStatusView.h"
 
-@interface SMAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource, SMAppDelegateDelegate>
+@interface SMAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource, AVAudioPlayerDelegate, SMAppDelegateDelegate>
 
 @property (strong, nonatomic) NSStatusItem *statusItem;
-@property (strong, nonatomic) QTMovie *player;
+@property (strong, nonatomic) AVAudioPlayer *audioPlayer;
 @property (strong, nonatomic) NSTimer *timer;
 @property (strong, nonatomic) NSMutableArray *episodes;
 @property (strong, nonatomic) IBOutlet NSMenu *statusMenu;
@@ -43,9 +43,6 @@
 @property (strong, nonatomic) IBOutlet NSTextField *URLField;
 @property (strong, nonatomic) IBOutlet NSWindow *preferencesWindow;
 
-- (void)movieLoaded:(NSNotification*)notification;
-- (void)movieRateChanged:(NSNotification*)notification;
-- (void)movieEnded:(NSNotification*)notification;
 - (void)addURL:(NSURL*)url;
 - (void)playURL:(NSURL*)url;
 - (void)doubleClickOnTableView:(NSTableView*)tableView;

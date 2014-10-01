@@ -21,7 +21,6 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <QTKit/QTKit.h>
 
 @protocol SMAppDelegateDelegate
 @required

@@ -26,9 +26,17 @@
 static NSString * const kFirstRunDonePreferenceKey = @"FirstRunDone";
 static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
+@interface SMAppDelegate ()
+
+- (void)startTimerUpdate;
+- (void)stopTimerUpdate;
+
+@end
+
 @implementation SMAppDelegate
 
-+ (void)initialize {
++ (void)initialize
+{
     [super initialize];
 
     [SMAppDelegate setupDefaults];
@@ -46,8 +54,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (BOOL)application:(NSApplication*)application openFile:(NSString*)filename
 {
-    NSURL *url = [NSURL fileURLWithPath:filename];
-    [self addURL:url];
+    [self addURL:[NSURL fileURLWithPath:filename]];
     
     return YES;
 }
@@ -70,26 +77,12 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.statusItem.menu = self.statusMenu;
     
     [self.statusItem setTarget:self];
-    [self.statusItem setAction:@selector(click:)];
-    
+
     SMStatusView *statusView = [[SMStatusView alloc] initWithFrame:NSMakeRect(0, 0, 22, NSStatusBar.systemStatusBar.thickness)];
     statusView.image = [NSImage imageNamed:@"statusBarIcon"];
     statusView.statusItem = self.statusItem;
     statusView.delegate = self;
     self.statusItem.view = statusView;
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(movieLoaded:)
-                                                 name:QTMovieLoadStateDidChangeNotification
-                                               object:self.player];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(movieRateChanged:)
-                                                 name:QTMovieRateDidChangeNotification
-                                               object:self.player];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(movieEnded:)
-                                                 name:QTMovieDidEndNotification
-                                               object:self.player];
 
     NSUserDefaultsController *defaultsController = [NSUserDefaultsController sharedUserDefaultsController];
     defaultsController.appliesImmediately = YES;
@@ -103,129 +96,51 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     }
 }
 
-#pragma mark - QTNotifications
+#pragma mark - AVAudioPlayerDelegate
 
-- (void)movieLoaded:(NSNotification*)notification
-{
-    NSLog(@"%@", notification);
-    NSLog(@"%@", [self.player attributeForKey:QTMovieLoadStateAttribute]);
-    
-    if([[self.player attributeForKey:QTMovieLoadStateAttribute] longValue] == QTMovieLoadStatePlaythroughOK)
-    {
-        NSString *title, *artist = @"", *album;
-        NSURL *playingURL = [self.player attributeForKey:@"QTMovieURLAttribute"];
-        
-        /*
-        NSLog(@"%@", self.player);
-        NSLog(@"%@", QTStringFromTime(self.player.currentTime));
-        
-        NSTimeInterval savedTime = [[NSUserDefaults.standardUserDefaults objectForKey:playingURL.absoluteString] doubleValue];
-        QTTime time = QTMakeTimeWithTimeInterval(savedTime);
-        
-        NSLog(@"%f", savedTime);
-        NSLog(@"%@", QTStringFromTime(time));
-        
-        [self.player setCurrentTime:time];
-    
-        NSLog(@"%@", QTStringFromTime(self.player.currentTime));
-        
-        //[self.player autoplay];
-        
-        NSLog(@"%@", QTStringFromTime(self.player.currentTime));
-        */
-        
-        [self updateSlider:nil];
-        
-        self.albumArtView.image = self.player.posterImage;
-        
-        /*
-         NSLog(@"%@", self.player.commonMetadata);
-         NSLog(@"%@", self.player.availableMetadataFormats);
-         NSLog(@"%@", [self.player metadataForFormat:@"QTMetadataFormatID3Metadata"]);
-         NSLog(@"%@", [self.player metadataForFormat:@"QTMetadataFormatQuickTimeMetadata"]);
-         NSLog(@"%@", [self.player metadataForFormat:@"QTMetadataFormatQuickTimeUserData"]);
-         NSLog(@"%@", [self.player metadataForFormat:@"QTMetadataFormatiTunesMetadata"]);
-         NSLog(@"%@", [self.player metadataForFormat:@"com.apple.quicktime.mdta"]);
-         NSLog(@"%@", [self.player metadataForFormat:@"com.apple.quicktime.udta"]);
-         */
-        
-        for(QTMetadataItem *item in self.player.commonMetadata)
-        {
-            if([(NSString*)item.key isEqualToString:@"title"])
-                title = item.stringValue;
-            else if([(NSString*)item.key isEqualToString:@"albumName"])
-                album = item.stringValue;
-            else if([(NSString*)item.key isEqualToString:@"artist"])
-                artist = item.stringValue;
-        }
-        
-        title = title ?: playingURL.lastPathComponent;
-        album = album ?: playingURL.host;
-        
-        self.titleLabel.stringValue = title;
-        ((SMStatusView*)self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
-        self.albumLabel.stringValue = album;
-        self.artistLabel.stringValue = artist;
-        
-        
-        NSInteger rowIndex = 0;
-        NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", playingURL];
-        NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
-        
-        if(array.count > 0)
-        {
-            NSString *show = [album isEqualToString:@""] ? artist : album;
-            NSDictionary *episodeDictionary = @{ @"title" : title, @"album" : show, @"url" : array[0][@"url"] };
-            
-            rowIndex = [self.episodes indexOfObject:array[0]];
-            [self.episodes replaceObjectAtIndex:rowIndex withObject:episodeDictionary];
-            
-            [self.episodeList reloadData];
-        }
-    }
-}
-
-- (void)movieRateChanged:(NSNotification*)notification
-{
-    if(self.player.rate)
-    {
-        self.playPauseButton.image = [NSImage imageNamed:@"button-pause"];
-        SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
-        statusView.image = [NSImage imageNamed:@"statusBarIcon-playing"];
-        
-        [self.timer invalidate];
-        self.timer = [NSTimer timerWithTimeInterval:1 target:self selector:@selector(updateSlider:) userInfo:nil repeats:YES];
-        [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString*)kCFRunLoopCommonModes];
-    }
-    else
-    {
-        self.playPauseButton.image = [NSImage imageNamed:@"button-play"];
-        SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
-        statusView.image = [NSImage imageNamed:@"statusBarIcon"];
-        
-        [self.timer invalidate];
-    }
-}
-
-- (void)movieEnded:(NSNotification*)notification
-{
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player
+                       successfully:(BOOL)flag {
     [self nextEpisode:nil];
+}
+
+- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player
+                                 error:(NSError *)error {
+
+}
+
+#pragma mark - Timer updates
+
+- (void)startTimerUpdate {
+    self.playPauseButton.image = [NSImage imageNamed:@"button-pause"];
+    SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
+    statusView.image = [NSImage imageNamed:@"statusBarIcon-playing"];
+
+    [self.timer invalidate];
+    self.timer = [NSTimer timerWithTimeInterval:1 target:self selector:@selector(updateSlider:) userInfo:nil repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString*)kCFRunLoopCommonModes];
+}
+
+- (void)stopTimerUpdate {
+    self.playPauseButton.image = [NSImage imageNamed:@"button-play"];
+    SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
+    statusView.image = [NSImage imageNamed:@"statusBarIcon"];
+
+    [self.timer invalidate];
 }
 
 - (void)updateSlider:(id)timer
 {
-    NSTimeInterval currentTime, duration;
-    QTGetTimeInterval(self.player.currentTime, &currentTime);
-    QTGetTimeInterval(self.player.duration, &duration);
-    
+    NSTimeInterval currentTime = self.audioPlayer.currentTime;
+    NSTimeInterval duration = self.audioPlayer.duration;
+
     self.seekbar.minValue = 0;
     self.seekbar.floatValue = currentTime;
     self.seekbar.maxValue = duration;
     
     float timeRemaining = duration-currentTime;
-    int hours = timeRemaining/60/60;
-    int minutes = timeRemaining/60 - 60*hours;
-    int seconds = timeRemaining - 60*minutes - 60*60*hours;
+    int hours = timeRemaining / 60 / 60;
+    int minutes = timeRemaining / 60 - 60 * hours;
+    int seconds = timeRemaining - 60 * minutes - 60 * 60 * hours;
     self.timeLabel.stringValue = [NSString stringWithFormat:@"%0.1d:%0.2d:%0.2d", hours, minutes, seconds];
 }
 
@@ -233,14 +148,13 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (IBAction)openFileDialog:(id)sender
 {
-    NSOpenPanel *panel;
-    
-    panel = [NSOpenPanel openPanel];
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
     [panel setFloatingPanel:YES];
     [panel setCanChooseDirectories:YES];
     [panel setCanChooseFiles:YES];
-    [panel setAllowsMultipleSelection:NO];
-    [panel setAllowedFileTypes:[NSArray arrayWithObject:@"mp3"]];
+    [panel setAllowsMultipleSelection:NO]; // TODO: allow multiple selection
+    [panel setResolvesAliases:YES];
+    [panel setAllowedFileTypes:[NSArray arrayWithObject:@"mp3"]]; // TODO: get all audio extensions
     
     [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result){
         if(result == NSFileHandlingPanelOKButton)
@@ -289,9 +203,14 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (void)addURL:(NSURL*)url
 {
-    if(![QTMovie canInitWithURL:url])
+    AVAsset *asset = [AVURLAsset URLAssetWithURL:url
+                                         options:@{
+                                                   AVURLAssetPreferPreciseDurationAndTimingKey: @YES,
+                                                   AVURLAssetReferenceRestrictionsKey: @(AVAssetReferenceRestrictionForbidNone)
+                                                   }];
+    if (!asset.playable)
         return;
-    
+
     if(self.episodes.count == 0)
         [self playURL:url];
     
@@ -320,44 +239,96 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.seekbar.floatValue = 0;
     
     self.albumArtView.image = nil;
+
+    NSString *title;
+    NSString *artist = @"";
+    NSString *album;
+
+    [self updateSlider:nil];
+
+    // self.albumArtView.image = self.audioPlayer.posterImage;
+
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url
+                                            options:nil];
+
+    for (NSString *format in asset.availableMetadataFormats) {
+        for (AVMetadataItem *item in [asset metadataForFormat:format]) {
+            if ([item.commonKey isEqualToString:@"title"]) {
+                title = item.stringValue;
+                continue;
+            }
+
+            if ([item.commonKey isEqualToString:@"albumName"]) {
+                album = item.stringValue;
+                continue;
+            }
+
+            if ([item.commonKey isEqualToString:@"artist"]) {
+                artist = item.stringValue;
+                continue;
+            }
+        }
+    }
+
+    title = title ?: url.lastPathComponent;
+    album = album ?: url.host;
+
+    self.titleLabel.stringValue = title;
+    ((SMStatusView*)self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
+    self.albumLabel.stringValue = album;
+    self.artistLabel.stringValue = artist;
+
+    NSInteger rowIndex = 0;
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];
+    NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
+
+    if(array.count > 0)
+    {
+        NSString *show = [album isEqualToString:@""] ? artist : album;
+        NSDictionary *episodeDictionary = @{
+                                            @"title" : title,
+                                            @"album" : show,
+                                            @"url" : array[0][@"url"]
+                                            };
+
+        rowIndex = [self.episodes indexOfObject:array[0]];
+        [self.episodes replaceObjectAtIndex:rowIndex withObject:episodeDictionary];
+        
+        [self.episodeList reloadData];
+    }
     
     NSTimeInterval savedTime = [[NSUserDefaults.standardUserDefaults objectForKey:url.absoluteString] doubleValue];
-    QTTime time = QTMakeTimeWithTimeInterval(savedTime);
-    
-    NSDictionary *attr = @{ QTMovieURLAttribute : url,
-                            QTMovieCurrentTimeAttribute : [NSValue valueWithQTTime:time],
-                            QTMovieOpenForPlaybackAttribute : @YES
-                          };
-    
-    QTMovie *file = [QTMovie movieWithAttributes:attr error:nil];
-    
-    //self.player = [[QTMovie alloc] initWithMovie:file timeRange:QTMakeTimeRange(time, time) error:nil];
-    
-    if(file)
-    {
-        NSLog(@"%@", QTStringFromTime(time));
-        
-        self.player = file;
-        [self.player setCurrentTime:time];
-        [self.player autoplay];
-        
-        NSLog(@"%@", QTStringFromTime(self.player.currentTime));
+    NSError *error;
+    self.audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:url
+                                                              error:&error];
+    if (![self.audioPlayer prepareToPlay]) {
+        return;
     }
+    self.audioPlayer.delegate = self;
+
+    self.audioPlayer.currentTime = savedTime;
+    [self.audioPlayer play];
+
+    [self startTimerUpdate];
 }
 
 #pragma mark - Actions
 
 - (IBAction)togglePlayPause:(id)sender
 {
-    if(self.player.rate)
-        [self.player stop];
-    else
-        [self.player play];
+    if (self.audioPlayer.playing) {
+        [self.audioPlayer stop];
+        [self stopTimerUpdate];
+    } else {
+        [self.audioPlayer play];
+        [self startTimerUpdate];
+    }
 }
 
 - (IBAction)slideSeekbar:(id)sender
 {
-    self.player.currentTime = QTMakeTimeWithTimeInterval(self.seekbar.floatValue);
+    self.audioPlayer.currentTime = self.seekbar.floatValue;
+
     [self updateSlider:nil];
 }
 
@@ -365,8 +336,8 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 {
     if(sender)
         [self saveState];
-    
-    NSURL *playingURL = [self.player attributeForKey:@"QTMovieURLAttribute"];
+
+    NSURL *playingURL = self.audioPlayer.url;
     NSInteger rowIndex = 0;
     
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", playingURL];
@@ -414,24 +385,19 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (void)saveState
 {
-    NSURL *playingURL = [self.player attributeForKey:@"QTMovieURLAttribute"];
-    
-    if(playingURL)
-    {
-        NSTimeInterval currentTime, duration;
-        QTGetTimeInterval(self.player.currentTime, &currentTime);
-        QTGetTimeInterval(self.player.duration, &duration);
-        
-        NSLog(@"%f", currentTime);
-        NSLog(@"%@", QTStringFromTime(self.player.currentTime));
-        
-        if(currentTime > duration*0.8f)
-            [NSUserDefaults.standardUserDefaults removeObjectForKey:playingURL.absoluteString];
-        else
-            [NSUserDefaults.standardUserDefaults setObject:@(currentTime) forKey:playingURL.absoluteString];
-        
-        [NSUserDefaults.standardUserDefaults synchronize];
+    if (!self.audioPlayer.url)
+        return;
+
+    NSTimeInterval currentTime = self.audioPlayer.currentTime;
+    NSTimeInterval duration = self.audioPlayer.duration;
+
+    if (currentTime > (duration * 0.8f)) {
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:self.audioPlayer.url.absoluteString];
+    } else {
+        [NSUserDefaults.standardUserDefaults setObject:@(currentTime) forKey:self.audioPlayer.url.absoluteString];
     }
+
+    [NSUserDefaults.standardUserDefaults synchronize];
 }
 
 #pragma mark - NSTableViewDataSource
@@ -454,8 +420,8 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     else if([tableColumn.identifier isEqualToString:@"isPlaying"])
     {
         NSURL *url = self.episodes[rowIndex][@"url"];
-        NSURL *playingURL = [self.player attributeForKey:@"QTMovieURLAttribute"];
-        
+        NSURL *playingURL = self.audioPlayer.url;
+
         if([url isEqualTo:playingURL])
             return @"✓";
     }
@@ -513,7 +479,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (void)quit:(id)sender
 {
-    [self.player stop];
+    [self.audioPlayer stop];
     [NSApplication.sharedApplication terminate:self];
 }
 

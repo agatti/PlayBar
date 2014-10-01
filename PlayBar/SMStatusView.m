@@ -22,6 +22,8 @@
 
 #import "SMStatusView.h"
 
+#import <AVFoundation/AVFoundation.h>
+
 @implementation SMStatusView
 
 @synthesize isHighlighted;
@@ -52,8 +54,9 @@
             url = [NSURL URLWithString:[item stringForType:@"public.file-url"]];
         else if([item.types containsObject:@"public.utf8-plain-text"])
             url = [NSURL URLWithString:[item stringForType:@"public.utf8-plain-text"]];
-        
-        if(![url.pathExtension isEqualToString:@"mp3"] && ![QTMovie canInitWithURL:url])
+
+        AVAsset *asset = [AVURLAsset assetWithURL:url];
+        if(![url.pathExtension isEqualToString:@"mp3"] && !asset.playable)
             return NSDragOperationNone;
     }
     
