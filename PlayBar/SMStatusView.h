@@ -23,16 +23,18 @@
 #import <Cocoa/Cocoa.h>
 
 @protocol SMAppDelegateDelegate
+
 @required
+
 - (void)addURL:(NSURL*)url;
 - (BOOL)togglePopover;
 - (IBAction)togglePlayPause:(id)sender;
+
 @end
 
 @interface SMStatusView : NSView <NSMenuDelegate>
 
 @property (nonatomic, weak) id<SMAppDelegateDelegate> delegate;
-
 @property (nonatomic, weak) NSStatusItem *statusItem;
 @property (nonatomic, weak) NSImage *image;
 

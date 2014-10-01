@@ -55,7 +55,8 @@
         else if([item.types containsObject:@"public.utf8-plain-text"])
             url = [NSURL URLWithString:[item stringForType:@"public.utf8-plain-text"]];
 
-        AVAsset *asset = [AVURLAsset assetWithURL:url];
+        AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url
+                                                options:nil];
         if(![url.pathExtension isEqualToString:@"mp3"] && !asset.playable)
             return NSDragOperationNone;
     }

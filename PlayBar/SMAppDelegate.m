@@ -30,6 +30,16 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (void)startTimerUpdate;
 - (void)stopTimerUpdate;
+- (void)updateMetadataFromURL:(NSURL *)url;
+
+- (void)addURL:(NSURL *)url;
+- (void)playURL:(NSURL *)url;
+- (void)doubleClickOnTableView:(NSTableView *)tableView;
+
+@property (strong, nonatomic) NSStatusItem *statusItem;
+@property (strong, nonatomic) AVAudioPlayer *audioPlayer;
+@property (strong, nonatomic) NSMutableArray *episodes;
+@property (strong, nonatomic) NSTimer *timer;
 
 @end
 
@@ -44,7 +54,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification
 {
-    self.episodes = [NSMutableArray array];
+    self.episodes = [NSMutableArray new];
     
     NSAppleEventManager *appleEventManager = [NSAppleEventManager sharedAppleEventManager];
     [appleEventManager setEventHandler:self
@@ -72,14 +82,16 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     
     self.statusItem = [NSStatusBar.systemStatusBar statusItemWithLength:NSVariableStatusItemLength];
     [self.statusItem setHighlightMode:YES];
+
+    NSImage *statusBarIcon = [NSImage imageNamed:@"statusBarIcon"];
     
-    self.statusItem.image = [NSImage imageNamed:@"statusBarIcon"];
+    self.statusItem.image = statusBarIcon;
     self.statusItem.menu = self.statusMenu;
     
     [self.statusItem setTarget:self];
 
     SMStatusView *statusView = [[SMStatusView alloc] initWithFrame:NSMakeRect(0, 0, 22, NSStatusBar.systemStatusBar.thickness)];
-    statusView.image = [NSImage imageNamed:@"statusBarIcon"];
+    statusView.image = statusBarIcon;
     statusView.statusItem = self.statusItem;
     statusView.delegate = self;
     self.statusItem.view = statusView;
@@ -98,19 +110,20 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 #pragma mark - AVAudioPlayerDelegate
 
-- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player
-                       successfully:(BOOL)flag {
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag
+{
     [self nextEpisode:nil];
 }
 
-- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player
-                                 error:(NSError *)error {
+- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player error:(NSError *)error
+{
 
 }
 
 #pragma mark - Timer updates
 
-- (void)startTimerUpdate {
+- (void)startTimerUpdate
+{
     self.playPauseButton.image = [NSImage imageNamed:@"button-pause"];
     SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
     statusView.image = [NSImage imageNamed:@"statusBarIcon-playing"];
@@ -120,7 +133,8 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString*)kCFRunLoopCommonModes];
 }
 
-- (void)stopTimerUpdate {
+- (void)stopTimerUpdate
+{
     self.playPauseButton.image = [NSImage imageNamed:@"button-play"];
     SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
     statusView.image = [NSImage imageNamed:@"statusBarIcon"];
@@ -152,13 +166,16 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [panel setFloatingPanel:YES];
     [panel setCanChooseDirectories:YES];
     [panel setCanChooseFiles:YES];
-    [panel setAllowsMultipleSelection:NO]; // TODO: allow multiple selection
+    [panel setAllowsMultipleSelection:YES];
     [panel setResolvesAliases:YES];
     [panel setAllowedFileTypes:[NSArray arrayWithObject:@"mp3"]]; // TODO: get all audio extensions
     
     [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result){
-        if(result == NSFileHandlingPanelOKButton)
-            [self addURL:panel.URL];
+        if (result == NSFileHandlingPanelOKButton) {
+            [panel.URLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                [self addURL:(NSURL *)obj];
+            }];
+        }
     }];
 }
 
@@ -191,7 +208,6 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (IBAction)showAboutWindow:(id)sender
 {
-
 }
 
 - (IBAction)showPreferenceWindow:(id)sender
@@ -211,7 +227,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     if (!asset.playable)
         return;
 
-    if(self.episodes.count == 0)
+    if (self.episodes.count == 0)
         [self playURL:url];
     
     // if is directory, recurse.
@@ -219,25 +235,28 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];
     NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
     
-    if(!array || array.count == 0)
+    if (array.count == 0)
     {
-        NSDictionary *episodeDictionary = @{ @"title" : url.lastPathComponent, @"album" : url.host ? url.host : @"", @"url" : url };
+        NSDictionary *episodeDictionary = @{
+                                            @"title" : url.lastPathComponent,
+                                            @"album" : url.host ?: @"",
+                                            @"url" : url
+                                            };
         [self.episodes addObject:episodeDictionary];
         [self.episodeList reloadData];
     }
 }
 
-- (void)playURL:(NSURL*)url
-{
+- (void)updateMetadataFromURL:(NSURL *)url {
     self.titleLabel.stringValue = @"";
     self.albumLabel.stringValue = @"";
     self.artistLabel.stringValue = @"";
     self.statusItem.toolTip = @"";
-    
+
     self.seekbar.minValue = 0;
     self.seekbar.maxValue = 0;
     self.seekbar.floatValue = 0;
-    
+
     self.albumArtView.image = nil;
 
     NSString *title;
@@ -246,26 +265,36 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
     [self updateSlider:nil];
 
-    // self.albumArtView.image = self.audioPlayer.posterImage;
-
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url
                                             options:nil];
 
     for (NSString *format in asset.availableMetadataFormats) {
         for (AVMetadataItem *item in [asset metadataForFormat:format]) {
-            if ([item.commonKey isEqualToString:@"title"]) {
+            if ([item.commonKey isEqualToString:AVMetadataCommonKeyTitle]) {
                 title = item.stringValue;
                 continue;
             }
 
-            if ([item.commonKey isEqualToString:@"albumName"]) {
+            if ([item.commonKey isEqualToString:AVMetadataCommonKeyAlbumName]) {
                 album = item.stringValue;
                 continue;
             }
 
-            if ([item.commonKey isEqualToString:@"artist"]) {
+            if ([item.commonKey isEqualToString:AVMetadataCommonKeyArtist]) {
                 artist = item.stringValue;
                 continue;
+            }
+
+            if ([item.commonKey isEqualToString:AVMetadataCommonKeyArtwork]) {
+                if ([item.keySpace isEqualToString:AVMetadataKeySpaceID3]) {
+                    NSDictionary *id3 = [item.value copyWithZone:nil];
+                    self.albumArtView.image = [[NSImage alloc] initWithData:id3[@"data"]];
+                    continue;
+                }
+
+                if ([item.keySpace isEqualToString:AVMetadataKeySpaceiTunes]) {
+                    self.albumArtView.image = [[NSImage alloc] initWithData:[item.value copyWithZone:nil]];
+                }
             }
         }
     }
@@ -274,7 +303,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     album = album ?: url.host;
 
     self.titleLabel.stringValue = title;
-    ((SMStatusView*)self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
+    ((SMStatusView*) self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
     self.albumLabel.stringValue = album;
     self.artistLabel.stringValue = artist;
 
@@ -296,7 +325,12 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
         
         [self.episodeList reloadData];
     }
-    
+}
+
+- (void)playURL:(NSURL*)url
+{
+    [self updateMetadataFromURL:url];
+
     NSTimeInterval savedTime = [[NSUserDefaults.standardUserDefaults objectForKey:url.absoluteString] doubleValue];
     NSError *error;
     self.audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:url
@@ -409,20 +443,22 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (id)tableView:(NSTableView*)tableView objectValueForTableColumn:(NSTableColumn*)tableColumn row:(NSInteger)rowIndex
 {
-    if([tableColumn.identifier isEqualToString:@"title"])
+    if ([tableColumn.identifier isEqualToString:@"title"])
     {
         return self.episodes[rowIndex][@"title"];
     }
-    else if([tableColumn.identifier isEqualToString:@"album"])
+
+    if ([tableColumn.identifier isEqualToString:@"album"])
     {
         return self.episodes[rowIndex][@"album"];
     }
-    else if([tableColumn.identifier isEqualToString:@"isPlaying"])
+
+    if ([tableColumn.identifier isEqualToString:@"isPlaying"])
     {
         NSURL *url = self.episodes[rowIndex][@"url"];
         NSURL *playingURL = self.audioPlayer.url;
 
-        if([url isEqualTo:playingURL])
+        if ([url isEqualTo:playingURL])
             return @"✓";
     }
     
@@ -443,7 +479,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (BOOL)togglePopover
 {
-    NSRect frame = [[[NSApp currentEvent] window] frame];
+    NSRect frame = [NSApp currentEvent].window.frame;
     NSSize screenSize = self.popover.screen.frame.size;
     
     if(self.popover.isVisible)
@@ -456,7 +492,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
         frame.origin.y -= self.popover.frame.size.height;
         frame.origin.x += (frame.size.width - self.popover.frame.size.width)/2;
         
-        if(screenSize.width < frame.origin.x + self.popover.frame.size.width)
+        if (screenSize.width < frame.origin.x + self.popover.frame.size.width)
             frame.origin.x = screenSize.width - self.popover.frame.size.width - 10;
         
         [self.popover setFrameOrigin:frame.origin];

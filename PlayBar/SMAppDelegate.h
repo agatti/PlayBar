@@ -27,14 +27,12 @@
 
 @interface SMAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource, AVAudioPlayerDelegate, SMAppDelegateDelegate>
 
-@property (strong, nonatomic) NSStatusItem *statusItem;
-@property (strong, nonatomic) AVAudioPlayer *audioPlayer;
-@property (strong, nonatomic) NSTimer *timer;
-@property (strong, nonatomic) NSMutableArray *episodes;
 @property (strong, nonatomic) IBOutlet NSMenu *statusMenu;
 @property (strong, nonatomic) IBOutlet NSPanel *popover;
 @property (strong, nonatomic) IBOutlet NSTextField *timeLabel;
-@property (strong, nonatomic) IBOutlet NSTextField *titleLabel, *albumLabel, *artistLabel;
+@property (strong, nonatomic) IBOutlet NSTextField *titleLabel;
+@property (strong, nonatomic) IBOutlet NSTextField *albumLabel;
+@property (strong, nonatomic) IBOutlet NSTextField *artistLabel;
 @property (strong, nonatomic) IBOutlet NSSlider *seekbar;
 @property (strong, nonatomic) IBOutlet NSImageView *albumArtView;
 @property (strong, nonatomic) IBOutlet NSButton *playPauseButton;
@@ -43,9 +41,6 @@
 @property (strong, nonatomic) IBOutlet NSTextField *URLField;
 @property (strong, nonatomic) IBOutlet NSWindow *preferencesWindow;
 
-- (void)addURL:(NSURL*)url;
-- (void)playURL:(NSURL*)url;
-- (void)doubleClickOnTableView:(NSTableView*)tableView;
 - (IBAction)togglePlayPause:(id)sender;
 - (IBAction)slideSeekbar:(id)sender;
 - (IBAction)nextEpisode:(id)sender;
