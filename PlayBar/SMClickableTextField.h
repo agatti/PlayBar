@@ -1,9 +1,8 @@
 //
-//  SMStatusView.h
+//  SMClickableTextField.h
 //  PlayBar
 //
-//  Created by Stuart Moore on 8/12/12.
-//  Copyright (c) 2012-2013 Stuart Moore.
+//  Created by Alessandro Gatti on 02/10/14.
 //  Copyright (c) 2014 Alessandro Gatti.
 //  This file is part of PlayBar.
 
@@ -20,28 +19,19 @@
 //  You should have received a copy of the GNU General Public License
 //  along with PlayBar.  If not, see <http://www.gnu.org/licenses/>.
 //
-//
 
 #import <Cocoa/Cocoa.h>
 
-@protocol SMAppDelegateDelegate
+@protocol SMClickableTextFieldClickDelegate
 
 @required
 
-- (BOOL)addURL:(NSURL *)url;
-- (BOOL)togglePopover;
-- (IBAction)togglePlayPause:(id)sender;
+- (IBAction)textFieldClicked:(id)sender;
 
 @end
 
-@interface SMStatusView : NSView <NSMenuDelegate, NSDraggingDestination>
+@interface SMClickableTextField : NSTextField
 
-@property (nonatomic, weak) id<SMAppDelegateDelegate> delegate;
-@property (nonatomic, weak) NSStatusItem *statusItem;
-@property (nonatomic, weak) NSImage *image;
-
-@property (nonatomic) BOOL isHighlighted;
-
-- (void)highlight:(BOOL)_isHightlighted;
+@property (strong, nonatomic) id<SMClickableTextFieldClickDelegate> clickDelegate;
 
 @end

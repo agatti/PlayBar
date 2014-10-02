@@ -34,7 +34,6 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 - (void)stopTimerUpdate;
 - (void)updateMetadataFromURL:(NSURL *)url;
 
-- (void)addURL:(NSURL *)url;
 - (void)playURL:(NSURL *)url;
 - (void)doubleClickOnTableView:(NSTableView *)tableView;
 
@@ -43,6 +42,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 @property (strong, nonatomic) NSMutableArray *episodes;
 @property (strong, nonatomic) NSTimer *timer;
 @property (strong, nonatomic) NSArray *supportedFormatExtensions;
+@property (assign, nonatomic) BOOL showCurrentTime;
 
 @end
 
@@ -57,6 +57,10 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notification
 {
+    self.showCurrentTime = YES;
+    self.timeLabel.target = self;
+    self.preferencesWindow.delegate = self;
+
     self.episodes = [NSMutableArray new];
     
     NSAppleEventManager *appleEventManager = [NSAppleEventManager sharedAppleEventManager];
@@ -72,10 +76,10 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
             NSString *extension = CFBridgingRelease(UTTypeCopyPreferredTagWithClass(type, kUTTagClassFilenameExtension));
             [supportedAudioFormats addObject:extension];
         }
+        *stop = NO;
     }];
 
     self.supportedFormatExtensions = supportedAudioFormats;
-    self.preferencesWindow.delegate = self;
 }
 
 - (BOOL)application:(NSApplication*)application openFile:(NSString*)filename
@@ -166,12 +170,28 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.seekbar.minValue = 0;
     self.seekbar.floatValue = currentTime;
     self.seekbar.maxValue = duration;
-    
-    float timeRemaining = duration-currentTime;
-    int hours = timeRemaining / 60 / 60;
-    int minutes = timeRemaining / 60 - 60 * hours;
-    int seconds = timeRemaining - 60 * minutes - 60 * 60 * hours;
-    self.timeLabel.stringValue = [NSString stringWithFormat:@"%0.1d:%0.2d:%0.2d", hours, minutes, seconds];
+
+    if (self.showCurrentTime)
+    {
+        float timeRemaining = currentTime;
+        int hours = timeRemaining / 60 / 60;
+        int minutes = timeRemaining / 60 - 60 * hours;
+        int seconds = timeRemaining - 60 * minutes - 60 * 60 * hours;
+        self.time = [NSString stringWithFormat:@"%0.1d:%0.2d:%0.2d", hours, minutes, seconds];
+    }
+    else
+    {
+        float timeRemaining = duration - currentTime;
+        int hours = timeRemaining / 60 / 60;
+        int minutes = timeRemaining / 60 - 60 * hours;
+        int seconds = timeRemaining - 60 * minutes - 60 * 60 * hours;
+        self.time = [NSString stringWithFormat:@"-%0.1d:%0.2d:%0.2d", hours, minutes, seconds];
+    }
+}
+
+- (void)textFieldClicked:(id)sender
+{
+    self.showCurrentTime = !self.showCurrentTime;
 }
 
 #pragma mark - Open Files
@@ -188,37 +208,41 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
     NSFileManager *manager = [NSFileManager defaultManager];
 
-    [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result){
-        if (result == NSFileHandlingPanelOKButton) {
-            [panel.URLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                NSURL *url = (NSURL *)obj;
-                NSString *path = url.path;
-
-                struct stat fileInformation;
-
-                const char *filesystemPath = [manager fileSystemRepresentationWithPath:path];
-                if (stat(filesystemPath, &fileInformation) != 0) {
-                    return;
-                }
-
-                if (fileInformation.st_mode & S_IFDIR) {
-                    NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:url
-                                                      includingPropertiesForKeys:@[ NSURLIsDirectoryKey, NSURLIsRegularFileKey, NSURLIsReadableKey, NSURLNameKey ]
-                                                                         options:NSDirectoryEnumerationSkipsHiddenFiles | NSDirectoryEnumerationSkipsPackageDescendants
-                                                                    errorHandler:^BOOL(NSURL *url, NSError *error) {
-                                                                        return YES;
-                                                                    }];
-                    NSURL *childURL;
-                    while ((childURL = [enumerator nextObject])) {
-                        if ([AVURLAsset URLAssetWithURL:childURL options:nil].playable) {
-                            [self addURL:childURL];
-                        }
-                    }
-                } else {
-                    [self addURL:url];
-                }
-            }];
+    [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result) {
+        if (result != NSFileHandlingPanelOKButton) {
+            return;
         }
+
+        [panel.URLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            NSURL *url = (NSURL *)obj;
+            NSString *path = url.path;
+
+            struct stat fileInformation;
+
+            const char *filesystemPath = [manager fileSystemRepresentationWithPath:path];
+            if (stat(filesystemPath, &fileInformation) != 0) {
+                return;
+            }
+
+            if (fileInformation.st_mode & S_IFDIR) {
+                NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:url
+                                                    includingPropertiesForKeys:@[ NSURLIsDirectoryKey, NSURLIsRegularFileKey, NSURLIsReadableKey, NSURLNameKey ]
+                                                                     options:NSDirectoryEnumerationSkipsHiddenFiles | NSDirectoryEnumerationSkipsPackageDescendants
+                                                                errorHandler:^BOOL(NSURL *url, NSError *error) {
+                                                                    return YES;
+                                                                }];
+                NSURL *childURL;
+                while ((childURL = [enumerator nextObject])) {
+                    if ([AVURLAsset URLAssetWithURL:childURL options:nil].playable) {
+                        [self addURL:childURL];
+                    }
+                }
+            } else {
+                [self addURL:url];
+            }
+
+            *stop = NO;
+        }];
     }];
 }
 
@@ -260,15 +284,15 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 #pragma mark - Add and Play
 
-- (void)addURL:(NSURL*)url
+- (BOOL)addURL:(NSURL *)url
 {
-    AVAsset *asset = [AVURLAsset URLAssetWithURL:url
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url
                                          options:@{
                                                    AVURLAssetPreferPreciseDurationAndTimingKey: @YES,
                                                    AVURLAssetReferenceRestrictionsKey: @(AVAssetReferenceRestrictionForbidNone)
                                                    }];
     if (!asset.playable)
-        return;
+        return NO;
 
     if (self.episodes.count == 0)
         [self playURL:url];
@@ -286,6 +310,8 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
         [self.episodes addObject:episodeDictionary];
         [self.episodeList reloadData];
     }
+
+    return YES;
 }
 
 - (void)updateMetadataFromURL:(NSURL *)url {

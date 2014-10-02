@@ -23,13 +23,15 @@
 
 #import <Cocoa/Cocoa.h>
 #import <AVFoundation/AVFoundation.h>
-#import "SMStatusView.h"
 
-@interface SMAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource, AVAudioPlayerDelegate, SMAppDelegateDelegate>
+#import "SMStatusView.h"
+#import "SMClickableTextField.h"
+
+@interface SMAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource, AVAudioPlayerDelegate, SMAppDelegateDelegate, SMClickableTextFieldClickDelegate>
 
 @property (strong, nonatomic) IBOutlet NSMenu *statusMenu;
 @property (strong, nonatomic) IBOutlet NSPanel *popover;
-@property (strong, nonatomic) IBOutlet NSTextField *timeLabel;
+@property (strong, nonatomic) IBOutlet SMClickableTextField *timeLabel;
 @property (strong, nonatomic) IBOutlet NSSlider *seekbar;
 @property (strong, nonatomic) IBOutlet NSButton *playPauseButton;
 @property (strong, nonatomic) IBOutlet NSTableView *episodeList;
@@ -40,9 +42,9 @@
 @property (strong, nonatomic) NSString *album;
 @property (strong, nonatomic) NSString *title;
 @property (strong, nonatomic) NSString *artist;
+@property (strong, nonatomic) NSString *time;
 @property (strong, nonatomic) NSImage *cover;
 
-- (IBAction)togglePlayPause:(id)sender;
 - (IBAction)slideSeekbar:(id)sender;
 - (IBAction)nextEpisode:(id)sender;
 - (IBAction)toggleList:(id)sender;

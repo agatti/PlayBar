@@ -55,8 +55,6 @@
                 <outlet property="preferencesWindow" destination="HOm-Rc-nLi" id="7pT-RK-QOV"/>
                 <outlet property="seekbar" destination="560" id="586"/>
                 <outlet property="statusMenu" destination="536" id="579"/>
-                <outlet property="timeLabel" destination="575" id="651"/>
-                <outlet property="timeRemainingLabel" destination="575" id="588"/>
             </connections>
         </customObject>
         <customObject id="420" customClass="NSFontManager"/>
@@ -118,7 +116,7 @@
                                     <binding destination="494" name="value" keyPath="self.artist" id="W8x-oq-tVy"/>
                                 </connections>
                             </textField>
-                            <textField verticalHuggingPriority="750" id="575">
+                            <textField verticalHuggingPriority="750" id="575" customClass="SMClickableTextField">
                                 <rect key="frame" x="365" y="13" width="59" height="17"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
                                 <textFieldCell key="cell" lineBreakMode="truncatingHead" sendsActionOnEndEditing="YES" alignment="center" title="0:00:00" id="576">
@@ -126,6 +124,9 @@
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
+                                <connections>
+                                    <binding destination="494" name="value" keyPath="self.time" id="6qg-9S-LIC"/>
+                                </connections>
                             </textField>
                             <imageView id="558">
                                 <rect key="frame" x="7" y="45" width="87" height="87"/>

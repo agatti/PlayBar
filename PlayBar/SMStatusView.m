@@ -24,19 +24,25 @@
 
 #import <AVFoundation/AVFoundation.h>
 
+@interface SMStatusView ()
+
+- (NSArray *)urlsFromDragOperation:(id<NSDraggingInfo>)sender;
+
+@end
+
 @implementation SMStatusView
 
 @synthesize isHighlighted;
 
 - (id)initWithFrame:(NSRect)frame
 {
-    self = [super initWithFrame:frame];
-    if (self)
+    if (self = [super initWithFrame:frame])
     {
         [self registerForDraggedTypes:@[NSFilenamesPboardType,
                                         NSURLPboardType,
                                         NSStringPboardType]];
     }
+
     return self;
 }
 
@@ -44,25 +50,12 @@
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
 {
-    for(NSPasteboardItem *item in sender.draggingPasteboard.pasteboardItems)
-    {
-        NSURL *url;
-        
-        if([item.types containsObject:@"public.url"])
-            url = [NSURL URLWithString:[item stringForType:@"public.url"]];
-        else if([item.types containsObject:@"public.file-url"])
-            url = [NSURL URLWithString:[item stringForType:@"public.file-url"]];
-        else if([item.types containsObject:@"public.utf8-plain-text"])
-            url = [NSURL URLWithString:[item stringForType:@"public.utf8-plain-text"]];
-
-        AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url
-                                                options:nil];
-        if(![url.pathExtension isEqualToString:@"mp3"] && !asset.playable)
+    for (NSURL *url in [self urlsFromDragOperation:sender]) {
+        if (![AVURLAsset URLAssetWithURL:url options:nil].playable)
             return NSDragOperationNone;
     }
-    
+
     [self highlight:YES];
-    
     return NSDragOperationCopy;
 }
 
@@ -74,36 +67,46 @@
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
     [self highlight:NO];
-    
-    NSMutableArray *fileURLs = [NSMutableArray array];
-    
-    for(NSPasteboardItem *item in sender.draggingPasteboard.pasteboardItems)
-    {
-        NSURL *url;
-        
-        if([item.types containsObject:@"public.url"])
-            url = [NSURL URLWithString:[item stringForType:@"public.url"]];
-        else if([item.types containsObject:@"public.file-url"])
-            url = [NSURL URLWithString:[item stringForType:@"public.file-url"]];
-        else if([item.types containsObject:@"public.utf8-plain-text"])
-            url = [NSURL URLWithString:[item stringForType:@"public.utf8-plain-text"]];
-        
-        if(url)
-            [fileURLs addObject:url];
-    }
-    
-    if(fileURLs.count == 0)
-        return NO;
-    
-    for(NSURL *url in fileURLs)
+
+    NSArray *fileURLs = [self urlsFromDragOperation:sender];
+    for (NSURL *url in [self urlsFromDragOperation:sender]) {
         [self.delegate addURL:url];
-    
-    return YES;
+    }
+
+    return fileURLs.count > 0;
+}
+
+- (NSArray *)urlsFromDragOperation:(id<NSDraggingInfo>)sender
+{
+    NSMutableArray *urls = [NSMutableArray new];
+
+    for (NSPasteboardItem *item in sender.draggingPasteboard.pasteboardItems)
+    {
+        if ([item.types containsObject:@"public.url"])
+        {
+            [urls addObject:[NSURL URLWithString:[item stringForType:@"public.url"]]];
+            continue;
+        }
+
+        if ([item.types containsObject:@"public.file-url"])
+        {
+            [urls addObject:[NSURL URLWithString:[item stringForType:@"public.file-url"]]];
+            continue;
+        }
+
+        if ([item.types containsObject:@"public.utf8-plain-text"])
+        {
+            [urls addObject:[NSURL URLWithString:[item stringForType:@"public.utf8-plain-text"]]];
+            continue;
+        }
+    }
+
+    return urls;
 }
 
 #pragma mark - Click, Control Click, & Alt Click
 
-- (void)mouseDown:(NSEvent*)event
+- (void)mouseDown:(NSEvent *)event
 {
     if(event.modifierFlags & NSControlKeyMask)
         [self rightMouseDown:nil];
@@ -113,7 +116,7 @@
         [self highlight:[self.delegate togglePopover]];
 }
 
-- (void)mouseUp:(NSEvent*)event
+- (void)mouseUp:(NSEvent *)event
 {
     if(event.modifierFlags & NSAlternateKeyMask)
         [self otherMouseUp:nil];
@@ -121,7 +124,7 @@
 
 #pragma mark - Right Click
 
-- (void)rightMouseDown:(NSEvent*)event
+- (void)rightMouseDown:(NSEvent *)event
 {
     if(isHighlighted)
         [self.delegate togglePopover];
@@ -130,12 +133,12 @@
     [self.statusItem popUpStatusItemMenu:self.statusItem.menu];
 }
 
-- (void)menuWillOpen:(NSMenu*)menu
+- (void)menuWillOpen:(NSMenu *)menu
 {
     [self highlight:YES];
 }
 
-- (void)menuDidClose:(NSMenu*)menu
+- (void)menuDidClose:(NSMenu *)menu
 {
     [self highlight:NO];
     [self.statusItem.menu setDelegate:nil];
@@ -143,9 +146,9 @@
 
 #pragma mark - Middle Click
 
-- (void)otherMouseDown:(NSEvent*)event
+- (void)otherMouseDown:(NSEvent *)event
 {
-    if(event.buttonNumber == 2 || event == nil)
+    if (event.buttonNumber == 2 || event == nil)
     {
         [self.delegate togglePlayPause:nil];
         
@@ -179,7 +182,7 @@
 {
     [self.statusItem drawStatusBarBackgroundInRect:self.bounds withHighlight:isHighlighted];
     
-    NSImage *image = isHighlighted?[NSImage imageNamed:@"statusBarIcon-click"]:self.image;
+    NSImage *image = isHighlighted ? [NSImage imageNamed:@"statusBarIcon-click"] : self.image;
     [image drawInRect:self.bounds fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
 }
 
