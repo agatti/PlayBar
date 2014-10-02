@@ -292,6 +292,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.album = @"";
     self.title = @"";
     self.artist = @"";
+    self.cover = nil;
 
     self.statusItem.toolTip = @"";
 
@@ -299,11 +300,9 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.seekbar.maxValue = 0;
     self.seekbar.floatValue = 0;
 
-    self.albumArtView.image = nil;
-
-    NSString *title = @"";
-    NSString *artist = @"";
-    NSString *album = @"";
+    NSString *title = nil;
+    NSString *artist = nil;
+    NSString *album = nil;
 
     [self updateSlider:nil];
 
@@ -330,12 +329,12 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
             if ([item.commonKey isEqualToString:AVMetadataCommonKeyArtwork]) {
                 if ([item.keySpace isEqualToString:AVMetadataKeySpaceID3]) {
                     NSDictionary *id3 = [item.value copyWithZone:nil];
-                    self.albumArtView.image = [[NSImage alloc] initWithData:id3[@"data"]];
+                    self.cover = [[NSImage alloc] initWithData:id3[@"data"]];
                     continue;
                 }
 
                 if ([item.keySpace isEqualToString:AVMetadataKeySpaceiTunes]) {
-                    self.albumArtView.image = [[NSImage alloc] initWithData:[item.value copyWithZone:nil]];
+                    self.cover = [[NSImage alloc] initWithData:[item.value copyWithZone:nil]];
                 }
             }
         }
@@ -343,19 +342,19 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
     self.title = title ?: url.lastPathComponent;
     self.album = album ?: url.host;
-    self.artist = artist;
+    self.artist = artist ?: @"";
 
-    ((SMStatusView*) self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
+    ((SMStatusView *) self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
 
     NSInteger rowIndex = 0;
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];
     NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
 
-    if(array.count > 0)
+    if (array.count > 0)
     {
-        NSString *show = [album isEqualToString:@""] ? artist : album;
+        NSString *show = [self.album isEqualToString:@""] ? self.artist : self.album;
         NSDictionary *episodeDictionary = @{
-                                            @"title" : title,
+                                            @"title" : self.title,
                                             @"album" : show,
                                             @"url" : array[0][@"url"]
                                             };

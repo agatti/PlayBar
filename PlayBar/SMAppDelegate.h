@@ -31,7 +31,6 @@
 @property (strong, nonatomic) IBOutlet NSPanel *popover;
 @property (strong, nonatomic) IBOutlet NSTextField *timeLabel;
 @property (strong, nonatomic) IBOutlet NSSlider *seekbar;
-@property (strong, nonatomic) IBOutlet NSImageView *albumArtView;
 @property (strong, nonatomic) IBOutlet NSButton *playPauseButton;
 @property (strong, nonatomic) IBOutlet NSTableView *episodeList;
 @property (strong, nonatomic) IBOutlet NSWindow *openURLWindow;
@@ -41,6 +40,7 @@
 @property (strong, nonatomic) NSString *album;
 @property (strong, nonatomic) NSString *title;
 @property (strong, nonatomic) NSString *artist;
+@property (strong, nonatomic) NSImage *cover;
 
 - (IBAction)togglePlayPause:(id)sender;
 - (IBAction)slideSeekbar:(id)sender;
