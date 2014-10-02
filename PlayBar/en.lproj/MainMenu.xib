@@ -42,13 +42,12 @@
                     </connections>
                 </menuItem>
             </items>
+            <point key="canvasLocation" x="265.5" y="91.5"/>
         </menu>
         <customObject id="494" customClass="SMAppDelegate">
             <connections>
                 <outlet property="URLField" destination="601" id="615"/>
                 <outlet property="albumArtView" destination="558" id="582"/>
-                <outlet property="albumLabel" destination="569" id="583"/>
-                <outlet property="artistLabel" destination="571" id="584"/>
                 <outlet property="episodeList" destination="633" id="648"/>
                 <outlet property="openURLWindow" destination="604" id="606"/>
                 <outlet property="playPauseButton" destination="623" id="642"/>
@@ -58,7 +57,6 @@
                 <outlet property="statusMenu" destination="536" id="579"/>
                 <outlet property="timeLabel" destination="575" id="651"/>
                 <outlet property="timeRemainingLabel" destination="575" id="588"/>
-                <outlet property="titleLabel" destination="567" id="589"/>
             </connections>
         </customObject>
         <customObject id="420" customClass="NSFontManager"/>
@@ -92,6 +90,9 @@
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
+                                <connections>
+                                    <binding destination="494" name="value" keyPath="self.album" id="TaF-d6-bkx"/>
+                                </connections>
                             </textField>
                             <textField verticalHuggingPriority="750" id="567">
                                 <rect key="frame" x="101" y="79" width="381" height="19"/>
@@ -101,6 +102,9 @@
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
+                                <connections>
+                                    <binding destination="494" name="value" keyPath="self.title" id="ea0-ek-yX2"/>
+                                </connections>
                             </textField>
                             <textField verticalHuggingPriority="750" id="571">
                                 <rect key="frame" x="101" y="55" width="381" height="17"/>
@@ -110,6 +114,9 @@
                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
+                                <connections>
+                                    <binding destination="494" name="value" keyPath="self.artist" id="W8x-oq-tVy"/>
+                                </connections>
                             </textField>
                             <textField verticalHuggingPriority="750" id="575">
                                 <rect key="frame" x="365" y="13" width="59" height="17"/>
@@ -346,6 +353,7 @@ Gw
                     </textField>
                 </subviews>
             </view>
+            <point key="canvasLocation" x="81" y="413.5"/>
         </window>
     </objects>
     <resources>

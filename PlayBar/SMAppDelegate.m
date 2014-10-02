@@ -146,13 +146,13 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
     [self.timer invalidate];
     self.timer = [NSTimer timerWithTimeInterval:1 target:self selector:@selector(updateSlider:) userInfo:nil repeats:YES];
-    [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString*)kCFRunLoopCommonModes];
+    [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString *)kCFRunLoopCommonModes];
 }
 
 - (void)stopTimerUpdate
 {
     self.playPauseButton.image = [NSImage imageNamed:@"button-play"];
-    SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
+    SMStatusView *statusView = (SMStatusView *)self.statusItem.view;
     statusView.image = [NSImage imageNamed:@"statusBarIcon"];
 
     [self.timer invalidate];
@@ -187,7 +187,6 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [panel setAllowedFileTypes:self.supportedFormatExtensions];
 
     NSFileManager *manager = [NSFileManager defaultManager];
-
 
     [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result){
         if (result == NSFileHandlingPanelOKButton) {
@@ -290,9 +289,10 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 }
 
 - (void)updateMetadataFromURL:(NSURL *)url {
-    self.titleLabel.stringValue = @"";
-    self.albumLabel.stringValue = @"";
-    self.artistLabel.stringValue = @"";
+    self.album = @"";
+    self.title = @"";
+    self.artist = @"";
+
     self.statusItem.toolTip = @"";
 
     self.seekbar.minValue = 0;
@@ -341,13 +341,11 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
         }
     }
 
-    title = title ?: url.lastPathComponent;
-    album = album ?: url.host;
+    self.title = title ?: url.lastPathComponent;
+    self.album = album ?: url.host;
+    self.artist = artist;
 
-    self.titleLabel.stringValue = title;
     ((SMStatusView*) self.statusItem.view).toolTip = [NSString stringWithFormat:@"PlayBar - %@", title];
-    self.albumLabel.stringValue = album;
-    self.artistLabel.stringValue = artist;
 
     NSInteger rowIndex = 0;
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];

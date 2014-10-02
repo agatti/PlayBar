@@ -30,9 +30,6 @@
 @property (strong, nonatomic) IBOutlet NSMenu *statusMenu;
 @property (strong, nonatomic) IBOutlet NSPanel *popover;
 @property (strong, nonatomic) IBOutlet NSTextField *timeLabel;
-@property (strong, nonatomic) IBOutlet NSTextField *titleLabel;
-@property (strong, nonatomic) IBOutlet NSTextField *albumLabel;
-@property (strong, nonatomic) IBOutlet NSTextField *artistLabel;
 @property (strong, nonatomic) IBOutlet NSSlider *seekbar;
 @property (strong, nonatomic) IBOutlet NSImageView *albumArtView;
 @property (strong, nonatomic) IBOutlet NSButton *playPauseButton;
@@ -41,13 +38,17 @@
 @property (strong, nonatomic) IBOutlet NSTextField *URLField;
 @property (strong, nonatomic) IBOutlet NSWindow *preferencesWindow;
 
+@property (strong, nonatomic) NSString *album;
+@property (strong, nonatomic) NSString *title;
+@property (strong, nonatomic) NSString *artist;
+
 - (IBAction)togglePlayPause:(id)sender;
 - (IBAction)slideSeekbar:(id)sender;
 - (IBAction)nextEpisode:(id)sender;
 - (IBAction)toggleList:(id)sender;
 - (IBAction)openFileDialog:(id)sender;
 - (IBAction)openURLDialog:(id)sender;
-- (IBAction)closeURLDialog:(NSButton*)sender;
+- (IBAction)closeURLDialog:(NSButton *)sender;
 - (IBAction)showAboutWindow:(id)sender;
 - (IBAction)showPreferenceWindow:(id)sender;
 - (IBAction)quit:(id)sender;
