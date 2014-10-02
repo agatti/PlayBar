@@ -40,6 +40,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 @property (strong, nonatomic) AVAudioPlayer *audioPlayer;
 @property (strong, nonatomic) NSMutableArray *episodes;
 @property (strong, nonatomic) NSTimer *timer;
+@property (strong, nonatomic) NSArray *supportedFormatExtensions;
 
 @end
 
@@ -60,6 +61,19 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [appleEventManager setEventHandler:self
                            andSelector:@selector(handleGetURLEvent:withReplyEvent:)
                          forEventClass:kInternetEventClass andEventID:kAEGetURL];
+
+    NSMutableArray *supportedAudioFormats = [NSMutableArray new];
+    NSArray *avUTIs = [AVURLAsset audiovisualTypes];
+    [avUTIs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        CFStringRef type = (__bridge CFStringRef)(obj);
+        if (UTTypeConformsTo(type, kUTTypeAudio)) {
+            NSString *extension = CFBridgingRelease(UTTypeCopyPreferredTagWithClass(type, kUTTagClassFilenameExtension));
+            [supportedAudioFormats addObject:extension];
+        }
+    }];
+
+    self.supportedFormatExtensions = supportedAudioFormats;
+    self.preferencesWindow.delegate = self;
 }
 
 - (BOOL)application:(NSApplication*)application openFile:(NSString*)filename
@@ -104,7 +118,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     if (!isFirstRun) {
         [defaults setBool:YES forKey:kFirstRunDonePreferenceKey];
         [defaults synchronize];
-        [self.preferencesWindow makeKeyAndOrderFront:self];
+        [self showPreferenceWindow:self];
     }
 }
 
@@ -168,8 +182,8 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [panel setCanChooseFiles:YES];
     [panel setAllowsMultipleSelection:YES];
     [panel setResolvesAliases:YES];
-    [panel setAllowedFileTypes:[NSArray arrayWithObject:@"mp3"]]; // TODO: get all audio extensions
-    
+    [panel setAllowedFileTypes:self.supportedFormatExtensions];
+
     [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result){
         if (result == NSFileHandlingPanelOKButton) {
             [panel.URLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
@@ -259,9 +273,9 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
     self.albumArtView.image = nil;
 
-    NSString *title;
+    NSString *title = @"";
     NSString *artist = @"";
-    NSString *album;
+    NSString *album = @"";
 
     [self updateSlider:nil];
 
@@ -508,7 +522,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
     [self.popover close];
-    [((SMStatusView*)self.statusItem.view) highlight:NO];
+    [((SMStatusView *)self.statusItem.view) highlight:NO];
 }
 
 #pragma mark - Kill
@@ -519,7 +533,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [NSApplication.sharedApplication terminate:self];
 }
 
-- (void)applicationWillTerminate:(NSNotification*)notification
+- (void)applicationWillTerminate:(NSNotification *)notification
 {
     [self saveState];
 }
@@ -528,12 +542,20 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 + (void)setupDefaults
 {
-    NSString *userDefaultsValuesPath = [[NSBundle mainBundle] pathForResource:@"UserDefaults" ofType:@"plist"];
+    NSString *userDefaultsValuesPath = [[NSBundle mainBundle] pathForResource:@"UserDefaults"
+                                                                       ofType:@"plist"];
     NSDictionary *userDefaultsValuesDict = [NSDictionary dictionaryWithContentsOfFile:userDefaultsValuesPath];
     [[NSUserDefaults standardUserDefaults] registerDefaults:userDefaultsValuesDict];
     NSArray *resettableUserDefaultsKeys = @[ kExitWhenDonePreferenceKey ];
     NSDictionary *initialValuesDict = [userDefaultsValuesDict dictionaryWithValuesForKeys:resettableUserDefaultsKeys];
     [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:initialValuesDict];
+}
+
+- (void)windowWillClose:(NSNotification *)notification
+{
+    NSWindow *window = notification.object;
+    if (window == self.preferencesWindow) {
+    }
 }
 
 @end
