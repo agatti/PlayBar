@@ -23,6 +23,8 @@
 
 #import "SMAppDelegate.h"
 
+#import <sys/stat.h>
+
 static NSString * const kFirstRunDonePreferenceKey = @"FirstRunDone";
 static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
@@ -184,10 +186,38 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     [panel setResolvesAliases:YES];
     [panel setAllowedFileTypes:self.supportedFormatExtensions];
 
+    NSFileManager *manager = [NSFileManager defaultManager];
+
+
     [panel beginSheetModalForWindow:self.popover completionHandler:^(NSInteger result){
         if (result == NSFileHandlingPanelOKButton) {
             [panel.URLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                [self addURL:(NSURL *)obj];
+                NSURL *url = (NSURL *)obj;
+                NSString *path = url.path;
+
+                struct stat fileInformation;
+
+                const char *filesystemPath = [manager fileSystemRepresentationWithPath:path];
+                if (stat(filesystemPath, &fileInformation) != 0) {
+                    return;
+                }
+
+                if (fileInformation.st_mode & S_IFDIR) {
+                    NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:url
+                                                      includingPropertiesForKeys:@[ NSURLIsDirectoryKey, NSURLIsRegularFileKey, NSURLIsReadableKey, NSURLNameKey ]
+                                                                         options:NSDirectoryEnumerationSkipsHiddenFiles | NSDirectoryEnumerationSkipsPackageDescendants
+                                                                    errorHandler:^BOOL(NSURL *url, NSError *error) {
+                                                                        return YES;
+                                                                    }];
+                    NSURL *childURL;
+                    while ((childURL = [enumerator nextObject])) {
+                        if ([AVURLAsset URLAssetWithURL:childURL options:nil].playable) {
+                            [self addURL:childURL];
+                        }
+                    }
+                } else {
+                    [self addURL:url];
+                }
             }];
         }
     }];
@@ -243,8 +273,6 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
     if (self.episodes.count == 0)
         [self playURL:url];
-    
-    // if is directory, recurse.
     
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];
     NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
