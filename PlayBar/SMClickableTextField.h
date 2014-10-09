@@ -32,6 +32,6 @@
 
 @interface SMClickableTextField : NSTextField
 
-@property (strong, nonatomic) id<SMClickableTextFieldClickDelegate> clickDelegate;
+@property(strong, nonatomic) id <SMClickableTextFieldClickDelegate> clickDelegate;
 
 @end

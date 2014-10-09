@@ -29,18 +29,20 @@
 @required
 
 - (BOOL)addURL:(NSURL *)url;
+
 - (BOOL)togglePopover;
+
 - (IBAction)togglePlayPause:(id)sender;
 
 @end
 
 @interface SMStatusView : NSView <NSMenuDelegate, NSDraggingDestination>
 
-@property (nonatomic, weak) id<SMAppDelegateDelegate> delegate;
-@property (nonatomic, weak) NSStatusItem *statusItem;
-@property (nonatomic, weak) NSImage *image;
+@property(nonatomic, weak) id <SMAppDelegateDelegate> delegate;
+@property(nonatomic, weak) NSStatusItem *statusItem;
+@property(nonatomic, weak) NSImage *image;
 
-@property (nonatomic) BOOL isHighlighted;
+@property(nonatomic) BOOL isHighlighted;
 
 - (void)highlight:(BOOL)_isHightlighted;
 

@@ -25,8 +25,7 @@
 
 @implementation SMClickableTextField
 
-- (void)mouseDown:(NSEvent *)event
-{
+- (void)mouseDown:(NSEvent *)event {
     [self sendAction:@selector(textFieldClicked:) to:self.clickDelegate];
 }
 

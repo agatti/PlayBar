@@ -25,44 +25,45 @@
 
 #import <sys/stat.h>
 
-static NSString * const kFirstRunDonePreferenceKey = @"FirstRunDone";
-static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
+static NSString *const kFirstRunDonePreferenceKey = @"FirstRunDone";
+static NSString *const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 @interface SMAppDelegate ()
 
 - (void)startTimerUpdate;
+
 - (void)stopTimerUpdate;
+
 - (void)updateMetadataFromURL:(NSURL *)url;
 
 - (void)playURL:(NSURL *)url;
+
 - (void)doubleClickOnTableView:(NSTableView *)tableView;
 
-@property (strong, nonatomic) NSStatusItem *statusItem;
-@property (strong, nonatomic) AVAudioPlayer *audioPlayer;
-@property (strong, nonatomic) NSMutableArray *episodes;
-@property (strong, nonatomic) NSTimer *timer;
-@property (strong, nonatomic) NSArray *supportedFormatExtensions;
-@property (assign, nonatomic) BOOL showCurrentTime;
+@property(strong, nonatomic) NSStatusItem *statusItem;
+@property(strong, nonatomic) AVAudioPlayer *audioPlayer;
+@property(strong, nonatomic) NSMutableArray *episodes;
+@property(strong, nonatomic) NSTimer *timer;
+@property(strong, nonatomic) NSArray *supportedFormatExtensions;
+@property(assign, nonatomic) BOOL showCurrentTime;
 
 @end
 
 @implementation SMAppDelegate
 
-+ (void)initialize
-{
++ (void)initialize {
     [super initialize];
 
     [SMAppDelegate setupDefaults];
 }
 
-- (void)applicationWillFinishLaunching:(NSNotification*)notification
-{
+- (void)applicationWillFinishLaunching:(NSNotification *)notification {
     self.showCurrentTime = YES;
     self.timeLabel.target = self;
     self.preferencesWindow.delegate = self;
 
     self.episodes = [NSMutableArray new];
-    
+
     NSAppleEventManager *appleEventManager = [NSAppleEventManager sharedAppleEventManager];
     [appleEventManager setEventHandler:self
                            andSelector:@selector(handleGetURLEvent:withReplyEvent:)
@@ -71,7 +72,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     NSMutableArray *supportedAudioFormats = [NSMutableArray new];
     NSArray *avUTIs = [AVURLAsset audiovisualTypes];
     [avUTIs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        CFStringRef type = (__bridge CFStringRef)(obj);
+        CFStringRef type = (__bridge CFStringRef) (obj);
         if (UTTypeConformsTo(type, kUTTypeAudio)) {
             NSString *extension = CFBridgingRelease(UTTypeCopyPreferredTagWithClass(type, kUTTagClassFilenameExtension));
             [supportedAudioFormats addObject:extension];
@@ -82,32 +83,29 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.supportedFormatExtensions = supportedAudioFormats;
 }
 
-- (BOOL)application:(NSApplication*)application openFile:(NSString*)filename
-{
+- (BOOL)application:(NSApplication *)application openFile:(NSString *)filename {
     [self addURL:[NSURL fileURLWithPath:filename]];
-    
+
     return YES;
 }
 
-- (void)handleGetURLEvent:(NSAppleEventDescriptor*)event withReplyEvent:(NSAppleEventDescriptor*)replyEvent
-{
+- (void)handleGetURLEvent:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)replyEvent {
     NSString *urlString = [[event paramDescriptorForKeyword:keyDirectObject] stringValue];
     NSURL *url = [NSURL URLWithString:urlString];
     [self addURL:url];
 }
 
-- (void)applicationDidFinishLaunching:(NSNotification*)notification
-{
+- (void)applicationDidFinishLaunching:(NSNotification *)notification {
     [self.episodeList setDoubleAction:@selector(doubleClickOnTableView:)];
-    
+
     self.statusItem = [NSStatusBar.systemStatusBar statusItemWithLength:NSVariableStatusItemLength];
     [self.statusItem setHighlightMode:YES];
 
     NSImage *statusBarIcon = [NSImage imageNamed:@"statusBarIcon"];
-    
+
     self.statusItem.image = statusBarIcon;
     self.statusItem.menu = self.statusMenu;
-    
+
     [self.statusItem setTarget:self];
 
     SMStatusView *statusView = [[SMStatusView alloc] initWithFrame:NSMakeRect(0, 0, 22, NSStatusBar.systemStatusBar.thickness)];
@@ -130,40 +128,35 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 #pragma mark - AVAudioPlayerDelegate
 
-- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag
-{
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
     [self nextEpisode:nil];
 }
 
-- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player error:(NSError *)error
-{
+- (void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player error:(NSError *)error {
 
 }
 
 #pragma mark - Timer updates
 
-- (void)startTimerUpdate
-{
+- (void)startTimerUpdate {
     self.playPauseButton.image = [NSImage imageNamed:@"button-pause"];
-    SMStatusView *statusView = (SMStatusView*)self.statusItem.view;
+    SMStatusView *statusView = (SMStatusView *) self.statusItem.view;
     statusView.image = [NSImage imageNamed:@"statusBarIcon-playing"];
 
     [self.timer invalidate];
     self.timer = [NSTimer timerWithTimeInterval:1 target:self selector:@selector(updateSlider:) userInfo:nil repeats:YES];
-    [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString *)kCFRunLoopCommonModes];
+    [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:(NSString *) kCFRunLoopCommonModes];
 }
 
-- (void)stopTimerUpdate
-{
+- (void)stopTimerUpdate {
     self.playPauseButton.image = [NSImage imageNamed:@"button-play"];
-    SMStatusView *statusView = (SMStatusView *)self.statusItem.view;
+    SMStatusView *statusView = (SMStatusView *) self.statusItem.view;
     statusView.image = [NSImage imageNamed:@"statusBarIcon"];
 
     [self.timer invalidate];
 }
 
-- (void)updateSlider:(id)timer
-{
+- (void)updateSlider:(id)timer {
     NSTimeInterval currentTime = self.audioPlayer.currentTime;
     NSTimeInterval duration = self.audioPlayer.duration;
 
@@ -171,16 +164,14 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     self.seekbar.floatValue = currentTime;
     self.seekbar.maxValue = duration;
 
-    if (self.showCurrentTime)
-    {
+    if (self.showCurrentTime) {
         float timeRemaining = currentTime;
         int hours = timeRemaining / 60 / 60;
         int minutes = timeRemaining / 60 - 60 * hours;
         int seconds = timeRemaining - 60 * minutes - 60 * 60 * hours;
         self.time = [NSString stringWithFormat:@"%0.1d:%0.2d:%0.2d", hours, minutes, seconds];
     }
-    else
-    {
+    else {
         float timeRemaining = duration - currentTime;
         int hours = timeRemaining / 60 / 60;
         int minutes = timeRemaining / 60 - 60 * hours;
@@ -189,15 +180,13 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     }
 }
 
-- (void)textFieldClicked:(id)sender
-{
+- (void)textFieldClicked:(id)sender {
     self.showCurrentTime = !self.showCurrentTime;
 }
 
 #pragma mark - Open Files
 
-- (IBAction)openFileDialog:(id)sender
-{
+- (IBAction)openFileDialog:(id)sender {
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     [panel setFloatingPanel:YES];
     [panel setCanChooseDirectories:YES];
@@ -214,7 +203,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
         }
 
         [panel.URLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-            NSURL *url = (NSURL *)obj;
+            NSURL *url = (NSURL *) obj;
             NSString *path = url.path;
 
             struct stat fileInformation;
@@ -226,7 +215,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
             if (fileInformation.st_mode & S_IFDIR) {
                 NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:url
-                                                    includingPropertiesForKeys:@[ NSURLIsDirectoryKey, NSURLIsRegularFileKey, NSURLIsReadableKey, NSURLNameKey ]
+                                                  includingPropertiesForKeys:@[NSURLIsDirectoryKey, NSURLIsRegularFileKey, NSURLIsReadableKey, NSURLNameKey]
                                                                      options:NSDirectoryEnumerationSkipsHiddenFiles | NSDirectoryEnumerationSkipsPackageDescendants
                                                                 errorHandler:^BOOL(NSURL *url, NSError *error) {
                                                                     return YES;
@@ -246,8 +235,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     }];
 }
 
-- (IBAction)openURLDialog:(id)sender
-{
+- (IBAction)openURLDialog:(id)sender {
     [NSApp beginSheet:self.openURLWindow
        modalForWindow:self.popover
         modalDelegate:self
@@ -255,58 +243,52 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
           contextInfo:nil];
 }
 
-- (IBAction)closeURLDialog:(NSButton*)sender
-{
-    if([sender.title isEqualToString:@"Cancel"])
+- (IBAction)closeURLDialog:(NSButton *)sender {
+    if ([sender.title isEqualToString:@"Cancel"])
         [NSApp endSheet:self.openURLWindow returnCode:0];
-    else if([sender.title isEqualToString:@"Open"])
+    else if ([sender.title isEqualToString:@"Open"])
         [NSApp endSheet:self.openURLWindow returnCode:1];
 }
 
-- (void)didEndSheet:(NSWindow*)sheet returnCode:(NSInteger)returnCode contextInfo:(void*)contextInfo
-{
+- (void)didEndSheet:(NSWindow *)sheet returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo {
     [sheet orderOut:self];
 
-    if(returnCode == 1)
+    if (returnCode == 1)
         [self addURL:[NSURL URLWithString:self.URLField.stringValue]];
 }
 
 #pragma mark - Menu callbacks
 
-- (IBAction)showAboutWindow:(id)sender
-{
+- (IBAction)showAboutWindow:(id)sender {
 }
 
-- (IBAction)showPreferenceWindow:(id)sender
-{
+- (IBAction)showPreferenceWindow:(id)sender {
     [self.preferencesWindow makeKeyAndOrderFront:self];
 }
 
 #pragma mark - Add and Play
 
-- (BOOL)addURL:(NSURL *)url
-{
+- (BOOL)addURL:(NSURL *)url {
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url
-                                         options:@{
-                                                   AVURLAssetPreferPreciseDurationAndTimingKey: @YES,
-                                                   AVURLAssetReferenceRestrictionsKey: @(AVAssetReferenceRestrictionForbidNone)
-                                                   }];
+                                            options:@{
+                                                    AVURLAssetPreferPreciseDurationAndTimingKey : @YES,
+                                                    AVURLAssetReferenceRestrictionsKey : @(AVAssetReferenceRestrictionForbidNone)
+                                            }];
     if (!asset.playable)
         return NO;
 
     if (self.episodes.count == 0)
         [self playURL:url];
-    
+
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];
     NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
-    
-    if (array.count == 0)
-    {
+
+    if (array.count == 0) {
         NSDictionary *episodeDictionary = @{
-                                            @"title" : url.lastPathComponent,
-                                            @"album" : url.host ?: @"",
-                                            @"url" : url
-                                            };
+                @"title" : url.lastPathComponent,
+                @"album" : url.host ?: @"",
+                @"url" : url
+        };
         [self.episodes addObject:episodeDictionary];
         [self.episodeList reloadData];
     }
@@ -376,24 +358,22 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", url];
     NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
 
-    if (array.count > 0)
-    {
+    if (array.count > 0) {
         NSString *show = [self.album isEqualToString:@""] ? self.artist : self.album;
         NSDictionary *episodeDictionary = @{
-                                            @"title" : self.title,
-                                            @"album" : show,
-                                            @"url" : array[0][@"url"]
-                                            };
+                @"title" : self.title,
+                @"album" : show,
+                @"url" : array[0][@"url"]
+        };
 
         rowIndex = [self.episodes indexOfObject:array[0]];
         [self.episodes replaceObjectAtIndex:rowIndex withObject:episodeDictionary];
-        
+
         [self.episodeList reloadData];
     }
 }
 
-- (void)playURL:(NSURL*)url
-{
+- (void)playURL:(NSURL *)url {
     [self updateMetadataFromURL:url];
 
     NSTimeInterval savedTime = [[NSUserDefaults.standardUserDefaults objectForKey:url.absoluteString] doubleValue];
@@ -413,8 +393,7 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 #pragma mark - Actions
 
-- (IBAction)togglePlayPause:(id)sender
-{
+- (IBAction)togglePlayPause:(id)sender {
     if (self.audioPlayer.playing) {
         [self.audioPlayer stop];
         [self stopTimerUpdate];
@@ -424,66 +403,60 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
     }
 }
 
-- (IBAction)slideSeekbar:(id)sender
-{
+- (IBAction)slideSeekbar:(id)sender {
     self.audioPlayer.currentTime = self.seekbar.floatValue;
 
     [self updateSlider:nil];
 }
 
-- (IBAction)nextEpisode:(id)sender
-{
-    if(sender)
+- (IBAction)nextEpisode:(id)sender {
+    if (sender)
         [self saveState];
 
     NSURL *playingURL = self.audioPlayer.url;
     NSInteger rowIndex = 0;
-    
+
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"url == %@", playingURL];
     NSArray *array = [self.episodes filteredArrayUsingPredicate:predicate];
-    
-    if(array.count > 0)
-    {
+
+    if (array.count > 0) {
         rowIndex = [self.episodes indexOfObject:array[0]];
         rowIndex++;
     }
-    
-    if(!sender && rowIndex >= self.episodes.count)
-    {
+
+    if (!sender && rowIndex >= self.episodes.count) {
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
         BOOL shouldExit = [defaults boolForKey:kExitWhenDonePreferenceKey];
         if (shouldExit)
             [self quit:nil];
     }
-    
-    if(rowIndex >= self.episodes.count)
+
+    if (rowIndex >= self.episodes.count)
         rowIndex = 0;
-        
+
     NSURL *url = self.episodes[rowIndex][@"url"];
     [self playURL:url];
-    
+
     [self.episodeList reloadData];
 }
 
-- (IBAction)toggleList:(id)sender
-{
+- (IBAction)toggleList:(id)sender {
     NSSize screenSize = [[self.popover screen] frame].size;
     NSRect frame = self.popover.frame;
-    
-    if(frame.size.height > self.popover.minSize.height)
+
+    if (frame.size.height > self.popover.minSize.height)
         frame.size.height = self.popover.minSize.height;
     else
         frame.size.height += 200;
-    
+
     frame.origin.y = screenSize.height - 22 - frame.size.height;
-    
+
     [self.popover setFrame:frame display:YES animate:YES];
 }
 
 #pragma mark - Helpers
 
-- (void)saveState
-{
+- (void)saveState {
     if (!self.audioPlayer.url)
         return;
 
@@ -501,109 +474,95 @@ static NSString * const kExitWhenDonePreferenceKey = @"ExitWhenDone";
 
 #pragma mark - NSTableViewDataSource
 
-- (NSInteger)numberOfRowsInTableView:(NSTableView*)tableView
-{
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView {
     return self.episodes.count;
 }
 
-- (id)tableView:(NSTableView*)tableView objectValueForTableColumn:(NSTableColumn*)tableColumn row:(NSInteger)rowIndex
-{
-    if ([tableColumn.identifier isEqualToString:@"title"])
-    {
+- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)rowIndex {
+    if ([tableColumn.identifier isEqualToString:@"title"]) {
         return self.episodes[rowIndex][@"title"];
     }
 
-    if ([tableColumn.identifier isEqualToString:@"album"])
-    {
+    if ([tableColumn.identifier isEqualToString:@"album"]) {
         return self.episodes[rowIndex][@"album"];
     }
 
-    if ([tableColumn.identifier isEqualToString:@"isPlaying"])
-    {
+    if ([tableColumn.identifier isEqualToString:@"isPlaying"]) {
         NSURL *url = self.episodes[rowIndex][@"url"];
         NSURL *playingURL = self.audioPlayer.url;
 
         if ([url isEqualTo:playingURL])
             return @"✓";
     }
-    
+
     return nil;
 }
 
-- (void)doubleClickOnTableView:(NSTableView*)tableView
-{
+- (void)doubleClickOnTableView:(NSTableView *)tableView {
     [self saveState];
-    
+
     NSURL *url = self.episodes[tableView.clickedRow][@"url"];
     [self playURL:url];
-    
+
     [self.episodeList reloadData];
 }
 
 #pragma mark - Window
 
-- (BOOL)togglePopover
-{
+- (BOOL)togglePopover {
     NSRect frame = [NSApp currentEvent].window.frame;
     NSSize screenSize = self.popover.screen.frame.size;
-    
-    if(self.popover.isVisible)
-    {
+
+    if (self.popover.isVisible) {
         [self.popover close];
         [NSApp deactivate];
     }
-    else
-    {
+    else {
         frame.origin.y -= self.popover.frame.size.height;
-        frame.origin.x += (frame.size.width - self.popover.frame.size.width)/2;
-        
+        frame.origin.x += (frame.size.width - self.popover.frame.size.width) / 2;
+
         if (screenSize.width < frame.origin.x + self.popover.frame.size.width)
             frame.origin.x = screenSize.width - self.popover.frame.size.width - 10;
-        
+
         [self.popover setFrameOrigin:frame.origin];
-        
+
         [NSApp activateIgnoringOtherApps:YES];
         [self.popover setIsVisible:YES];
         [self.popover makeKeyAndOrderFront:self];
     }
-    
+
     return self.popover.isVisible;
 }
 
-- (void)applicationWillResignActive:(NSNotification *)notification
-{
+- (void)applicationWillResignActive:(NSNotification *)notification {
     [self.popover close];
-    [((SMStatusView *)self.statusItem.view) highlight:NO];
+    [((SMStatusView *) self.statusItem.view) highlight:NO];
 }
 
 #pragma mark - Kill
 
-- (void)quit:(id)sender
-{
+- (void)quit:(id)sender {
     [self.audioPlayer stop];
     [NSApplication.sharedApplication terminate:self];
 }
 
-- (void)applicationWillTerminate:(NSNotification *)notification
-{
+- (void)applicationWillTerminate:(NSNotification *)notification {
     [self saveState];
 }
 
 #pragma mark - Preferences
 
-+ (void)setupDefaults
-{
++ (void)setupDefaults {
     NSString *userDefaultsValuesPath = [[NSBundle mainBundle] pathForResource:@"UserDefaults"
                                                                        ofType:@"plist"];
     NSDictionary *userDefaultsValuesDict = [NSDictionary dictionaryWithContentsOfFile:userDefaultsValuesPath];
     [[NSUserDefaults standardUserDefaults] registerDefaults:userDefaultsValuesDict];
-    NSArray *resettableUserDefaultsKeys = @[ kExitWhenDonePreferenceKey ];
+    NSArray *resettableUserDefaultsKeys = @[kExitWhenDonePreferenceKey];
     NSDictionary *initialValuesDict = [userDefaultsValuesDict dictionaryWithValuesForKeys:resettableUserDefaultsKeys];
     [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:initialValuesDict];
 }
 
-- (void)windowWillClose:(NSNotification *)notification
-{
+- (void)windowWillClose:(NSNotification *)notification {
     NSWindow *window = notification.object;
     if (window == self.preferencesWindow) {
     }
